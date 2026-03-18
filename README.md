@@ -62,7 +62,7 @@ And `vd data/parquet/eml_messages.parquet` for interactive spreadsheet-style exp
 
 Two independent parsing pipelines produce four Parquet files in `data/parquet/`:
 
-### XML pipeline (`parse`)
+### XML pipeline (`parse-xml`)
 
 Parses the XML manifests. Fast, but only extracts structured metadata — no email bodies.
 
@@ -231,7 +231,7 @@ uv run ruff check src/ tests/  # Lint
 ```
 src/enron_emails/
   __init__.py
-  cli.py              # CLI entry points (download, parse, pipeline)
+  cli.py              # CLI entry points (download, parse-xml, parse-eml, pipeline)
   download.py          # Download and unpack from archive.org
   xml_metadata.py      # XML manifest parser -> Polars -> Parquet
   eml_parse.py         # .eml file parser -> Polars -> Parquet
