@@ -1,0 +1,36 @@
+[project]
+name = "enron-emails"
+version = "0.1.0"
+description = "Preprocess the Enron email corpus into Parquet data frames"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.2",
+    "polars>=1.0",
+    "pyarrow>=18.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+]
+
+[project.scripts]
+enron-emails = "enron_emails.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "SIM", "TCH", "ANN"]
+ignore = ["ANN101", "ANN102"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
