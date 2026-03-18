@@ -93,22 +93,24 @@ def _parse_eml(unpacked_dir: Path, output_dir: Path, custodians: list[str]) -> N
     print(f"Attachments: {attachments.height:>8,} rows -> {att_path}")
 
 
-def cmd_parse(args: argparse.Namespace) -> None:
-    """Parse XML manifests and .eml files into Parquet."""
+def cmd_parse_xml(args: argparse.Namespace) -> None:
+    """Parse XML manifests into Parquet."""
     data_dir = Path(args.data_dir)
-    unpacked_dir = data_dir / "unpacked"
-    output_dir = data_dir / "parquet"
-    custodians: list[str] = args.custodians or []
+    _parse_xml(data_dir / "unpacked", data_dir / "parquet", args.custodians or [])
 
-    _parse_xml(unpacked_dir, output_dir, custodians)
-    print()
-    _parse_eml(unpacked_dir, output_dir, custodians)
+
+def cmd_parse_eml(args: argparse.Namespace) -> None:
+    """Parse .eml files into Parquet."""
+    data_dir = Path(args.data_dir)
+    _parse_eml(data_dir / "unpacked", data_dir / "parquet", args.custodians or [])
 
 
 def cmd_pipeline(args: argparse.Namespace) -> None:
     """Download, unpack, and parse in one step."""
     cmd_download(args)
-    cmd_parse(args)
+    cmd_parse_xml(args)
+    print()
+    cmd_parse_eml(args)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -129,9 +131,13 @@ def main(argv: list[str] | None = None) -> None:
     dl.add_argument("custodians", nargs="+", help="Custodian names (e.g. harris-s)")
     dl.set_defaults(func=cmd_download)
 
-    parse = sub.add_parser("parse", help="Parse XML manifests and .eml files to Parquet")
-    parse.add_argument("custodians", nargs="*", help="Custodian names (all if omitted)")
-    parse.set_defaults(func=cmd_parse)
+    parse_xml = sub.add_parser("parse-xml", help="Parse XML manifests to Parquet")
+    parse_xml.add_argument("custodians", nargs="*", help="Custodian names (all if omitted)")
+    parse_xml.set_defaults(func=cmd_parse_xml)
+
+    parse_eml = sub.add_parser("parse-eml", help="Parse .eml files to Parquet")
+    parse_eml.add_argument("custodians", nargs="*", help="Custodian names (all if omitted)")
+    parse_eml.set_defaults(func=cmd_parse_eml)
 
     pipe = sub.add_parser("pipeline", help="Download + parse in one step")
     pipe.add_argument("custodians", nargs="+", help="Custodian names")

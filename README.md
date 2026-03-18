@@ -28,9 +28,10 @@ uv sync --all-extras
 # Download and unpack specific custodians
 uv run enron-emails download harris-s allen-p skilling-j
 
-# Parse everything to Parquet (XML manifests + .eml files)
-uv run enron-emails parse
-uv run enron-emails parse harris-s allen-p
+# Parse to Parquet
+uv run enron-emails parse-xml
+uv run enron-emails parse-eml
+uv run enron-emails parse-xml harris-s allen-p
 
 # Download + parse in one step
 uv run enron-emails pipeline harris-s allen-p
