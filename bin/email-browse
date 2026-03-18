@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Browse emails interactively with fzf + bat preview.
+# Usage: email-browse [custodian]    e.g. email-browse harris-s
+#        email-browse                (all custodians)
+set -euo pipefail
+
+DATA_DIR="${DATA_DIR:-data/unpacked}"
+PATTERN='\.txt$'
+
+if [[ $# -ge 1 ]]; then
+    DIR="$DATA_DIR/$1"
+else
+    DIR="$DATA_DIR"
+fi
+
+fdfind "$PATTERN" "$DIR" -t f \
+  | fzf \
+      --preview 'batcat --color=always --style=plain --wrap=character {}' \
+      --preview-window='right:65%:wrap' \
+      --bind 'enter:execute(batcat --color=always --style=plain --paging=always {})' \
+      --header '↵ open full · tab preview · type to filter'

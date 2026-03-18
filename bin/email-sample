@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Show N random emails. Great for getting a feel for the data.
+# Usage: email-sample [N] [custodian]
+#        email-sample 5 harris-s
+#        email-sample 3
+set -euo pipefail
+
+N="${1:-5}"
+CUSTODIAN="${2:-}"
+DATA_DIR="${DATA_DIR:-data/unpacked}"
+
+if [[ -n "$CUSTODIAN" ]]; then
+    DIR="$DATA_DIR/$CUSTODIAN"
+else
+    DIR="$DATA_DIR"
+fi
+
+fdfind '\.txt$' "$DIR" -t f \
+  | shuf -n "$N" \
+  | while read -r f; do
+      echo "━━━ $f ━━━"
+      batcat --color=always --style=plain "$f"
+      echo
+    done | less -R

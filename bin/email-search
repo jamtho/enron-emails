@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Search email text content with ripgrep, pick results in fzf.
+# Usage: email-search <pattern> [custodian]
+#        email-search "Original Message"
+#        email-search "california" dasovich-j
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+    echo "Usage: email-search <pattern> [custodian]" >&2
+    exit 1
+fi
+
+PATTERN="$1"
+CUSTODIAN="${2:-}"
+DATA_DIR="${DATA_DIR:-data/unpacked}"
+
+if [[ -n "$CUSTODIAN" ]]; then
+    DIR="$DATA_DIR/$CUSTODIAN"
+else
+    DIR="$DATA_DIR"
+fi
+
+rg --files-with-matches -g '*.txt' "$PATTERN" "$DIR" \
+  | fzf \
+      --preview "rg --color=always --context=3 '$PATTERN' {} | head -80" \
+      --preview-window='right:65%:wrap' \
+      --bind 'enter:execute(batcat --color=always --style=plain --paging=always {})' \
+      --header "searching: $PATTERN · ↵ open · tab preview"

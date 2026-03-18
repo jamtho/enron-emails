@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Tally common patterns in email bodies — useful for finding
+# reply markers, disclaimers, signatures, boilerplate to strip.
+# Usage: email-patterns [custodian]
+set -uo pipefail
+
+CUSTODIAN="${1:-}"
+DATA_DIR="${DATA_DIR:-data/unpacked}"
+
+if [[ -n "$CUSTODIAN" ]]; then
+    DIR="$DATA_DIR/$CUSTODIAN"
+else
+    DIR="$DATA_DIR"
+fi
+
+tally() {
+    local pat="$1"
+    local count
+    count=$(rg -c -e "$pat" -g '*.txt' "$DIR" 2>/dev/null | awk -F: '{s+=$NF}END{print s+0}')
+    printf "%7d  %s\n" "$count" "$pat"
+}
+
+echo "=== Reply / forward markers ==="
+tally '-----Original Message-----'
+tally '-----Forwarded by'
+tally '---------------------- Forwarded'
+tally '^> '
+tally '^From:.*Sent:'
+tally 'On .* wrote:'
+
+echo
+echo "=== Boilerplate ==="
+tally 'EDRM Enron Email Data Set'
+tally 'This e-mail is the property of Enron'
+tally '\*{10,}'
+tally '\[InternetShortcut\]'
+tally 'To provide attribution, please cite'
+
+echo
+echo "=== Encoding artefacts ==="
+tally '=[0-9A-F]{2}'
+tally '=20$'
+tally '=09'
+tally 'IMCEANOTES-'

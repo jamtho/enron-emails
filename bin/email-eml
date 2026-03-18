@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Browse raw .eml files (with full headers, MIME parts, etc.)
+# Usage: email-eml [custodian]
+set -euo pipefail
+
+DATA_DIR="${DATA_DIR:-data/unpacked}"
+
+if [[ $# -ge 1 ]]; then
+    DIR="$DATA_DIR/$1"
+else
+    DIR="$DATA_DIR"
+fi
+
+fdfind '\.eml$' "$DIR" -t f \
+  | fzf \
+      --preview 'batcat --color=always --style=plain --wrap=character {}' \
+      --preview-window='right:65%:wrap' \
+      --bind 'enter:execute(batcat --color=always --style=plain --paging=always {})' \
+      --header 'raw .eml files · ↵ open full · type to filter'
