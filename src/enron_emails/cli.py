@@ -105,6 +105,39 @@ def cmd_parse_eml(args: argparse.Namespace) -> None:
     _parse_eml(data_dir / "unpacked", data_dir / "parquet", args.custodians or [])
 
 
+def cmd_embed(args: argparse.Namespace) -> None:
+    """Generate OpenAI embeddings for email texts."""
+    from enron_emails.embed import build_chunks, embed_all
+
+    data_dir = Path(args.data_dir)
+    input_path = data_dir / "parquet" / "eml_messages.parquet"
+    output_dir = data_dir / "parquet" / "eml_embeddings"
+
+    if not input_path.exists():
+        print(f"Error: {input_path} not found. Run parse-eml first.", file=sys.stderr)
+        sys.exit(1)
+
+    custodians = args.custodians or None
+
+    columns: list[str] = []
+    if not args.no_body_top:
+        columns.append("body_top")
+    if args.body:
+        columns.append("body")
+    if not columns:
+        columns = ["body_top"]
+
+    for column in columns:
+        print(f"--- Embedding {column} ---")
+        result = embed_all(input_path, output_dir, column=column, custodians=custodians)
+        print(f"  -> {result}")
+
+    if args.chunks:
+        print("\n--- Building chunked embeddings ---")
+        chunks_path = build_chunks(input_path, data_dir / "parquet" / "eml_chunks.parquet")
+        print(f"  -> {chunks_path}")
+
+
 def cmd_pipeline(args: argparse.Namespace) -> None:
     """Download, unpack, and parse in one step."""
     cmd_download(args)
@@ -138,6 +171,13 @@ def main(argv: list[str] | None = None) -> None:
     parse_eml = sub.add_parser("parse-eml", help="Parse .eml files to Parquet")
     parse_eml.add_argument("custodians", nargs="*", help="Custodian names (all if omitted)")
     parse_eml.set_defaults(func=cmd_parse_eml)
+
+    embed = sub.add_parser("embed", help="Generate OpenAI embeddings")
+    embed.add_argument("custodians", nargs="*", help="Custodian names (all if omitted)")
+    embed.add_argument("--body", action="store_true", help="Also embed full body")
+    embed.add_argument("--no-body-top", action="store_true", help="Skip body_top embeddings")
+    embed.add_argument("--chunks", action="store_true", help="Build chunked embeddings for long emails")
+    embed.set_defaults(func=cmd_embed)
 
     pipe = sub.add_parser("pipeline", help="Download + parse in one step")
     pipe.add_argument("custodians", nargs="+", help="Custodian names")
