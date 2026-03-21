@@ -5,13 +5,17 @@ description = "Preprocess the Enron email corpus into Parquet data frames"
 requires-python = ">=3.12"
 dependencies = [
     "duckdb>=1.2",
+    "numpy>=2.4.3",
+    "openai>=1.0",
     "polars>=1.0",
     "pyarrow>=18.0",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
     "ruff>=0.9",
 ]
