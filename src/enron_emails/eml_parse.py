@@ -666,36 +666,72 @@ def parse_custodian_emls(custodian_dir: Path) -> tuple[pl.DataFrame, pl.DataFram
     return messages_df, attachments_df
 
 
+def _parse_custodian_to_parquet(args: tuple[Path, Path]) -> str | None:
+    """Worker: parse one custodian and write per-custodian parquet shards.
+
+    Returns the custodian name on success, or None if no .eml files found.
+    """
+    custodian_dir, shard_dir = args
+    if not list(custodian_dir.glob("native_*/*.eml")):
+        return None
+
+    name = custodian_dir.name
+    messages_df, attachments_df = parse_custodian_emls(custodian_dir)
+    print(f"  {name}: {messages_df.height:,} messages, {attachments_df.height:,} attachments")
+
+    messages_df.write_parquet(shard_dir / f"{name}_messages.parquet")
+    attachments_df.write_parquet(shard_dir / f"{name}_attachments.parquet")
+    return name
+
+
 def parse_all_emls(unpacked_dir: Path) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Parse all custodian directories under unpacked_dir.
 
+    Uses multiprocessing (one worker per custodian, capped at CPU count)
+    to parallelise parsing.  Each worker writes per-custodian parquet shards
+    to a temporary directory; these are combined at the end and then deleted.
+
     Returns ``(messages_df, attachments_df)`` with all custodians combined.
     """
-    msg_frames: list[pl.DataFrame] = []
-    att_frames: list[pl.DataFrame] = []
+    import multiprocessing
+    import shutil
 
-    for custodian_dir in sorted(unpacked_dir.iterdir()):
-        if not custodian_dir.is_dir():
-            continue
-        # Must have at least one native_* subdirectory with .eml files
-        if not list(custodian_dir.glob("native_*/*.eml")):
-            continue
-        print(f"Parsing {custodian_dir.name}...")
-        messages_df, attachments_df = parse_custodian_emls(custodian_dir)
-        print(f"  {messages_df.height:,} messages, {attachments_df.height:,} attachments")
-        msg_frames.append(messages_df)
-        att_frames.append(attachments_df)
+    shard_dir = unpacked_dir.parent / "parquet" / "_eml_shards"
+    shard_dir.mkdir(parents=True, exist_ok=True)
+
+    custodian_dirs = sorted(
+        d for d in unpacked_dir.iterdir() if d.is_dir()
+    )
+
+    workers = min(multiprocessing.cpu_count(), len(custodian_dirs))
+    print(f"Parsing {len(custodian_dirs)} custodians with {workers} workers...")
+
+    with multiprocessing.Pool(workers) as pool:
+        results = pool.map(
+            _parse_custodian_to_parquet,
+            [(d, shard_dir) for d in custodian_dirs],
+        )
+
+    parsed = [r for r in results if r is not None]
+    print(f"Parsed {len(parsed)} custodians, combining shards...")
+
+    msg_shards = sorted(shard_dir.glob("*_messages.parquet"))
+    att_shards = sorted(shard_dir.glob("*_attachments.parquet"))
 
     messages = (
-        pl.concat(msg_frames)
-        if msg_frames
+        pl.concat([pl.read_parquet(p) for p in msg_shards])
+        if msg_shards
         else pl.DataFrame(schema=_MESSAGES_SCHEMA)
     )
     attachments = (
-        pl.concat(att_frames)
-        if att_frames
+        pl.concat([pl.read_parquet(p) for p in att_shards])
+        if att_shards
         else pl.DataFrame(schema=_ATTACHMENTS_SCHEMA)
     )
+
+    # Clean up temporary shards
+    shutil.rmtree(shard_dir)
+
     return messages, attachments
 
 
