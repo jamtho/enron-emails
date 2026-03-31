@@ -74,6 +74,23 @@ def unpack_zip(zip_path: Path, unpacked_dir: Path) -> Path:
 
 
 def ensure_custodian(custodian: str, data_dir: Path) -> Path:
-    """Download and unpack a custodian archive. Returns the unpacked directory."""
-    zip_path = download_zip(custodian, data_dir / "downloads")
-    return unpack_zip(zip_path, data_dir / "unpacked")
+    """Download and unpack a custodian archive. Returns the unpacked directory.
+
+    Handles multi-part zips (e.g. kaminski-v_xml_1of2.zip, _2of2.zip) by
+    discovering all parts in the downloads directory.
+    """
+    downloads_dir = data_dir / "downloads"
+    unpacked_dir = data_dir / "unpacked"
+
+    # Check for multi-part zips first
+    pattern = f"edrm-enron-v2_{custodian}_xml_*of*.zip"
+    multipart = sorted(downloads_dir.glob(pattern))
+    if multipart:
+        dest = unpacked_dir / custodian
+        for part in multipart:
+            dest = unpack_zip(part, unpacked_dir)
+        return dest
+
+    # Single zip — download if needed, then unpack
+    zip_path = download_zip(custodian, downloads_dir)
+    return unpack_zip(zip_path, unpacked_dir)
