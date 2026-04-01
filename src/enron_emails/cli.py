@@ -138,6 +138,16 @@ def cmd_embed(args: argparse.Namespace) -> None:
         print(f"  -> {chunks_path}")
 
 
+def cmd_upload(args: argparse.Namespace) -> None:
+    """Upload Parquet files to S3-compatible storage."""
+    from enron_emails.upload import upload_parquet
+
+    data_dir = Path(args.data_dir)
+    print("Uploading parquet files to S3...")
+    uploaded = upload_parquet(data_dir)
+    print(f"Uploaded {len(uploaded)} files.")
+
+
 def cmd_pipeline(args: argparse.Namespace) -> None:
     """Download, unpack, and parse in one step."""
     cmd_download(args)
@@ -178,6 +188,9 @@ def main(argv: list[str] | None = None) -> None:
     embed.add_argument("--no-body-top", action="store_true", help="Skip body_top embeddings")
     embed.add_argument("--chunks", action="store_true", help="Build chunked embeddings for long emails")
     embed.set_defaults(func=cmd_embed)
+
+    upload = sub.add_parser("upload", help="Upload Parquet files to S3")
+    upload.set_defaults(func=cmd_upload)
 
     pipe = sub.add_parser("pipeline", help="Download + parse in one step")
     pipe.add_argument("custodians", nargs="+", help="Custodian names")

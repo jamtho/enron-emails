@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Preprocess the Enron email corpus into Parquet data frames"
 requires-python = ">=3.12"
 dependencies = [
+    "boto3>=1.42.80",
     "duckdb>=1.2",
     "numpy>=2.4.3",
     "openai>=1.0",
