@@ -41,6 +41,20 @@ uv run enron-emails embed                      # all custodians, body_top
 uv run enron-emails embed skilling-j lay-k     # specific custodians
 uv run enron-emails embed --body               # also embed full body
 uv run enron-emails embed --chunks             # chunked embeddings for long emails
+
+# Upload Parquet files to S3-compatible storage (requires S3 config in .env)
+uv run enron-emails upload
+```
+
+### S3 configuration
+
+The `upload` command pushes all generated Parquet files to an S3-compatible store (AWS S3, MinIO, etc.). Configure via `.env`:
+
+```
+S3_ENDPOINT_URL=http://localhost:9000
+S3_BUCKET=enron-emails
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
 ```
 
 ### Exploration tools
@@ -356,8 +370,9 @@ uv run ruff check src/ tests/  # Lint
 ```
 src/enron_emails/
   __init__.py
-  cli.py              # CLI entry points (download, parse-xml, parse-eml, embed, pipeline)
+  cli.py              # CLI entry points (download, parse-xml, parse-eml, embed, upload, pipeline)
   download.py          # Download and unpack from archive.org
+  upload.py            # Upload Parquet files to S3-compatible storage
   xml_metadata.py      # XML manifest parser -> Polars -> Parquet
   eml_parse.py         # .eml file parser -> Polars -> Parquet
   embed.py             # OpenAI embedding generation with async batching
