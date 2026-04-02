@@ -103,6 +103,16 @@ class TestParseAddress:
         assert name is None
         assert addr == "Kenneth_B._Mehlman@who.eop.gov"
 
+    def test_exchange_gateway_non_enron_org(self) -> None:
+        name, addr = parse_address("Lance Schuler-Legal/HOU/ECT@ECT")
+        assert name == "Lance Schuler-Legal"
+        assert addr is None
+
+    def test_exchange_gateway_corp_org(self) -> None:
+        name, addr = parse_address("Outlook Migration Team/Corp/Enron@ECT")
+        assert name == "Outlook Migration Team"
+        assert addr is None
+
     def test_imceanotes_with_display_name(self) -> None:
         raw = (
             '"Greg Rowe" '
