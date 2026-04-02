@@ -251,6 +251,15 @@ def parse_address(raw: str) -> tuple[str | None, str | None]:
             cn = _X500_RE.search(addr)
             return name or (cn.group(1) if cn else None), None
 
+        # The "addr" part might be Exchange gateway routing (Name/Org@Org)
+        gw = _GATEWAY_RE.match(addr)
+        if gw:
+            # Re-parse the display name — it might be an email address
+            if name:
+                return parse_address(name)
+            gw_name = gw.group("name").rstrip(".- ")
+            return (gw_name or None, None)
+
         return name, addr
 
     # X.500 distinguished name (no angle brackets)
