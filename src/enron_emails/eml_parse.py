@@ -145,6 +145,12 @@ _X500_RE = re.compile(r"/CN=([^/]+)$", re.IGNORECASE)
 # Exchange-style name fragments: <Last>,"First" or <Last>,<First>
 _EXCHANGE_NAME_RE = re.compile(r"<([^>]+)>\s*,\s*[\"<]?([^>\"]+)[>\"]?")
 
+# Exchange gateway routing suffix: @ENRON or @enronXgate at end of string
+_GATEWAY_TAIL_RE = re.compile(r"@(?:ENRON|enronXgate)\s*$", re.IGNORECASE)
+
+# Uppercase routing org hop: @ECT, @EES, @GWISE, etc. (no dots — not a domain)
+_ROUTING_ORG_RE = re.compile(r"@([A-Z_][A-Z0-9_]*)\s*$")
+
 # Strip remaining angle brackets and quotes from display names
 _NAME_JUNK_RE = re.compile(r"[<>\"]")
 
@@ -248,6 +254,21 @@ def parse_address(raw: str) -> tuple[str | None, str | None]:
     if "/O=" in raw.upper() or "/CN=" in raw.upper():
         cn = _X500_RE.search(raw)
         return (cn.group(1) if cn else raw, None)
+
+    # Exchange gateway routing: Name/Org@Gateway@ENRON or Name@ENRON
+    if _GATEWAY_TAIL_RE.search(raw):
+        stripped = _GATEWAY_TAIL_RE.sub("", raw)
+        # Peel off uppercase routing orgs: @ECT, @EES, @GWISE, etc.
+        while _ROUTING_ORG_RE.search(stripped):
+            stripped = _ROUTING_ORG_RE.sub("", stripped)
+        # Strip /Org path components (e.g. /NA/Enron, /ENRON_DEVELOPMENT)
+        slash_idx = stripped.find("/")
+        if slash_idx > 0:
+            stripped = stripped[:slash_idx]
+        stripped = stripped.rstrip(".- ")
+        if stripped:
+            return parse_address(stripped)
+        return None, None
 
     # Bare email address
     if "@" in raw and " " not in raw:

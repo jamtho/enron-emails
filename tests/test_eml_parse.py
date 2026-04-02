@@ -86,7 +86,22 @@ class TestParseAddress:
     def test_imceanotes(self) -> None:
         raw = "IMCEANOTES-user+40domain+2Ecom+40ENRON@ENRON.com"
         name, addr = parse_address(raw)
-        assert addr == "user@domain.com@ENRON"
+        assert addr == "user@domain.com"
+
+    def test_exchange_gateway_routing(self) -> None:
+        name, addr = parse_address("Elizabeth Johnston/ENRON@enronXgate@ENRON")
+        assert name == "Elizabeth Johnston"
+        assert addr is None
+
+    def test_exchange_gateway_simple(self) -> None:
+        name, addr = parse_address("Jeff Skilling@ENRON")
+        assert name == "Jeff Skilling"
+        assert addr is None
+
+    def test_exchange_gateway_with_email(self) -> None:
+        name, addr = parse_address("Kenneth_B._Mehlman@who.eop.gov@ENRON")
+        assert name is None
+        assert addr == "Kenneth_B._Mehlman@who.eop.gov"
 
     def test_imceanotes_with_display_name(self) -> None:
         raw = (
