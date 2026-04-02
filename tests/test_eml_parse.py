@@ -63,12 +63,18 @@ class TestParseAddress:
         raw = "Dasovich, Jeff </O=ENRON/OU=NA/CN=RECIPIENTS/CN=JDASOVIC>"
         name, addr = parse_address(raw)
         assert name == "Dasovich, Jeff"
-        assert addr == "/O=ENRON/OU=NA/CN=RECIPIENTS/CN=JDASOVIC"
+        assert addr is None
+
+    def test_x500_in_angle_brackets_no_name(self) -> None:
+        raw = "</O=ENRON/OU=NA/CN=RECIPIENTS/CN=CBENTLE>"
+        name, addr = parse_address(raw)
+        assert name == "CBENTLE"
+        assert addr is None
 
     def test_exchange_name_fragments(self) -> None:
         name, addr = parse_address('<Harris>,"Steven" </O=ENRON/OU=NA/CN=RECIPIENTS/CN=SHARRIS1>')
         assert name == "Steven Harris"
-        assert addr == "/O=ENRON/OU=NA/CN=RECIPIENTS/CN=SHARRIS1"
+        assert addr is None
 
     def test_exchange_name_only(self) -> None:
         name, addr = parse_address("<Mangin>,<Emmanuel>")

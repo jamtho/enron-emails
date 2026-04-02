@@ -236,6 +236,12 @@ def parse_address(raw: str) -> tuple[str | None, str | None]:
             name = cn.group(1) if cn else _clean_display_name(name_raw)
         else:
             name = _clean_display_name(name_raw)
+
+        # The "addr" part might be an X.500 DN rather than an email
+        if "/O=" in addr.upper() or "/CN=" in addr.upper():
+            cn = _X500_RE.search(addr)
+            return name or (cn.group(1) if cn else None), None
+
         return name, addr
 
     # X.500 distinguished name (no angle brackets)
